@@ -1,56 +1,282 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Pinpoint Viewer</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;overflow:hidden}#topbar{position:fixed;top:0;left:0;right:0;height:48px;background:#111;border-bottom:1px solid #222;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:99999;box-shadow:0 2px 12px rgba(0,0,0,.4)}.logo{color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap}.logo span{color:#3b82f6}.site-url{color:#555;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-family:monospace}.count{color:#fff;background:#3b82f6;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600;white-space:nowrap}.open-btn{color:#888;font-size:12px;text-decoration:none;white-space:nowrap;border:1px solid #333;padding:4px 10px;border-radius:6px}.open-btn:hover{color:#fff;border-color:#555}#frame-wrap{position:fixed;top:48px;left:0;right:0;bottom:0}iframe{width:100%;height:100%;border:none;display:block}.pin{position:fixed;z-index:99998;pointer-events:auto}.pin-dot{width:28px;height:28px;background:#3b82f6;color:#fff;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 14px rgba(59,130,246,.6);cursor:pointer;border:2px solid #fff;transform:translate(-50%,-50%);transition:transform .15s;user-select:none}.pin.open .pin-dot,.pin-dot:hover{transform:translate(-50%,-50%) scale(1.15)}.pin-card{display:none;position:absolute;background:#1a1a1a;color:#fff;padding:12px 14px;border-radius:12px;font-size:13px;white-space:pre-wrap;max-width:300px;min-width:180px;box-shadow:0 8px 32px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1);line-height:1.5;pointer-events:none;left:32px;top:-8px}.pin-card .pin-num{color:#3b82f6;font-weight:700;font-size:11px;margin-bottom:4px}.pin-card .pin-path{color:#555;font-size:10px;margin-top:6px;font-family:monospace}.pin.open .pin-card,.pin:hover .pin-card{display:block}#legend{position:fixed;bottom:16px;right:16px;z-index:99999;background:#111;border:1px solid #222;border-radius:14px;padding:12px 14px;max-width:280px;max-height:300px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5)}.legend-title{font-size:12px;color:#555;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}.legend-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;cursor:pointer}.legend-item:last-child{margin-bottom:0}.legend-num{min-width:22px;height:22px;background:#3b82f6;color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.legend-text{font-size:12px;color:#ccc;line-height:1.4}.legend-item:hover .legend-text{color:#fff}#overlay{position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:199999;gap:16px}.overlay-logo{font-size:32px}.overlay-msg{color:#888;font-size:15px}.overlay-err{color:#f87171;font-size:14px;max-width:400px;text-align:center;padding:0 20px}.spinner{width:32px;height:32px;border:3px solid #222;border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body>
-<div id="topbar" style="display:none"><div class="logo">&#128204; <span>Pinpoint</span></div><div class="site-url" id="site-url"></div><span class="count" id="ann-count"></span><a class="open-btn" id="open-btn" target="_blank" rel="noopener">Open site &#8599;</a></div>
-<div id="frame-wrap" style="display:none"><iframe id="site-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock"></iframe></div>
-<div id="legend" style="display:none"><div class="legend-title">Comments</div><div id="legend-items"></div></div>
-<div id="overlay"><div class="overlay-logo">&#128204;</div><div class="spinner" id="spinner"></div><div class="overlay-msg" id="overlay-msg">Loading annotations&#8230;</div></div>
+<html><head><meta charset="utf-8"><title>Pinpoint Viewer</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;overflow:hidden}
+#topbar{position:fixed;top:0;left:0;right:0;height:48px;background:#111;border-bottom:1px solid #222;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:99999;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.logo{color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.logo span{color:#3b82f6}
+.site-url{color:#555;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-family:monospace}
+.count{color:#fff;background:#3b82f6;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600;white-space:nowrap}
+.open-btn{color:#888;font-size:12px;text-decoration:none;white-space:nowrap;border:1px solid #333;padding:4px 10px;border-radius:6px}
+.open-btn:hover{color:#fff;border-color:#555}
+#frame-wrap{position:fixed;top:48px;left:0;right:0;bottom:0}
+iframe{width:100%;height:100%;border:none;display:block}
+
+/* Pin dot */
+.pin{position:fixed;z-index:99998;pointer-events:auto}
+.pin-dot{
+  width:28px;height:28px;background:#3b82f6;color:#fff;
+  border-radius:50%;font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 14px rgba(59,130,246,.6);
+  cursor:pointer;border:2px solid #fff;
+  transform:translate(-50%,-50%);
+  transition:transform .15s, background .15s;
+  user-select:none;
+}
+.pin-dot:hover{transform:translate(-50%,-50%) scale(1.1)}
+.pin.open .pin-dot{background:#1d4ed8;transform:translate(-50%,-50%) scale(1.1)}
+
+/* Card — click to open, stays open, close with X */
+.pin-card{
+  display:none;
+  position:absolute;
+  background:#1e1e1e;color:#e5e5e5;
+  padding:14px 16px 12px;border-radius:14px;
+  font-size:13px;line-height:1.6;
+  max-width:320px;min-width:200px;
+  box-shadow:0 8px 40px rgba(0,0,0,.7);
+  border:1px solid rgba(255,255,255,.12);
+  left:36px;top:-10px;
+  /* text is fully selectable */
+  user-select:text;-webkit-user-select:text;
+  pointer-events:auto;
+  z-index:99999;
+}
+.pin.open .pin-card{display:block}
+
+/* Flip left if too close to right edge — handled via JS */
+.pin-card.flip{left:auto;right:36px}
+
+.pin-card-header{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:8px;margin-bottom:8px;
+}
+.pin-card-num{
+  color:#3b82f6;font-weight:700;font-size:11px;
+  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
+}
+.pin-card-close{
+  background:rgba(255,255,255,.08);border:none;color:#888;
+  width:20px;height:20px;border-radius:50%;font-size:13px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;line-height:1;pointer-events:auto;
+  transition:background .15s,color .15s;
+}
+.pin-card-close:hover{background:rgba(255,255,255,.18);color:#fff}
+.pin-card-body{
+  white-space:pre-wrap;word-break:break-word;
+  user-select:text;-webkit-user-select:text;
+  cursor:text;
+}
+.pin-card-path{
+  color:#555;font-size:10px;margin-top:8px;
+  font-family:monospace;word-break:break-all;
+  user-select:text;-webkit-user-select:text;
+}
+
+/* Legend */
+#legend{
+  position:fixed;bottom:16px;right:16px;z-index:99999;
+  background:#111;border:1px solid #222;border-radius:14px;
+  padding:12px 14px;max-width:300px;max-height:320px;overflow-y:auto;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.legend-title{font-size:11px;color:#555;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.legend-item{
+  display:flex;gap:10px;align-items:flex-start;
+  margin-bottom:10px;cursor:pointer;padding:6px 8px;
+  border-radius:8px;transition:background .15s;
+}
+.legend-item:last-child{margin-bottom:0}
+.legend-item:hover{background:rgba(255,255,255,.05)}
+.legend-item.active{background:rgba(59,130,246,.12)}
+.legend-num{
+  min-width:22px;height:22px;background:#3b82f6;color:#fff;
+  border-radius:50%;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.legend-text{
+  font-size:12px;color:#ccc;line-height:1.4;
+  user-select:text;-webkit-user-select:text;
+}
+
+/* Overlay */
+#overlay{
+  position:fixed;inset:0;background:#0a0a0a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:199999;gap:16px;
+}
+.overlay-logo{font-size:32px}
+.overlay-msg{color:#888;font-size:15px}
+.overlay-err{color:#f87171;font-size:14px;max-width:400px;text-align:center;padding:0 20px}
+.spinner{width:32px;height:32px;border:3px solid #222;border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style></head>
+<body>
+
+<div id="topbar" style="display:none">
+  <div class="logo">&#128204; <span>Pinpoint</span></div>
+  <div class="site-url" id="site-url"></div>
+  <span class="count" id="ann-count"></span>
+  <a class="open-btn" id="open-btn" target="_blank" rel="noopener">Open site &#8599;</a>
+</div>
+<div id="frame-wrap" style="display:none">
+  <iframe id="site-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock"></iframe>
+</div>
+<div id="legend" style="display:none">
+  <div class="legend-title">Comments</div>
+  <div id="legend-items"></div>
+</div>
+<div id="overlay">
+  <div class="overlay-logo">&#128204;</div>
+  <div class="spinner" id="spinner"></div>
+  <div class="overlay-msg" id="overlay-msg">Loading annotations&#8230;</div>
+</div>
+
 <script>
-function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-var id=new URLSearchParams(location.search).get("id");
-if(!id){showError("No annotation ID in URL.");}else{loadAnnotations(id);}
-async function loadAnnotations(gistId){try{var r=await fetch("https://api.github.com/gists/"+gistId);if(!r.ok)throw new Error("Could not load ("+r.status+")");var d=await r.json();var rec=JSON.parse(d.files["pinpoint.json"].content);init(rec.url,rec.title,rec.annotations);}catch(e){showError(e.message);}}
-function init(url,title,annotations){
-  document.title=(title||"Pinpoint")+" - Annotated";
-  document.getElementById("site-url").textContent=url;
-  document.getElementById("ann-count").textContent=annotations.length+" comment"+(annotations.length!==1?"s":"");
-  document.getElementById("open-btn").href=url;
-  document.getElementById("topbar").style.display="flex";
-  document.getElementById("frame-wrap").style.display="block";
-  document.getElementById("legend").style.display="block";
-  var li=document.getElementById("legend-items");
-  li.innerHTML=annotations.map(function(a){return '<div class="legend-item" data-id="'+a.id+'"><div class="legend-num">'+a.id+'</div><div class="legend-text">'+esc(a.comment)+'</div></div>';}).join("");
-  var iframe=document.getElementById("site-frame");
-  iframe.src=url;
-  var placed=false;
-  function placePins(){
-    if(placed)return;placed=true;
-    document.querySelectorAll(".pin").forEach(function(p){p.remove();});
-    var iRect=iframe.getBoundingClientRect();
-    annotations.forEach(function(a){
-      var pin=document.createElement("div");
-      pin.className="pin";pin.dataset.id=a.id;
-      var absX=iRect.left+(a.x/100)*iRect.width;
-      var pageH=a.pageH||800;
-      var absY=iRect.top+(a.y/pageH)*iRect.height;
-      var cy=Math.max(iRect.top+20,Math.min(iRect.bottom-20,absY));
-      var flip=absX>window.innerWidth-360;
-      pin.style.left=absX+"px";pin.style.top=cy+"px";
-      pin.innerHTML='<div class="pin-dot">'+a.id+'</div><div class="pin-card" style="'+(flip?"left:auto;right:32px;":"left:32px;")+'"><div class="pin-num">Comment #'+a.id+'</div>'+esc(a.comment)+'<div class="pin-path">'+esc(a.path||"")+"</div></div>";
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+var id = new URLSearchParams(location.search).get('id');
+if (!id) { showError('No annotation ID in URL.'); }
+else { loadAnnotations(id); }
+
+async function loadAnnotations(gistId) {
+  try {
+    var r = await fetch('https://api.github.com/gists/' + gistId);
+    if (!r.ok) throw new Error('Could not load annotations (status ' + r.status + ')');
+    var d = await r.json();
+    var rec = JSON.parse(d.files['pinpoint.json'].content);
+    init(rec.url, rec.title, rec.annotations);
+  } catch(e) { showError(e.message); }
+}
+
+function init(url, title, annotations) {
+  document.title = (title || 'Pinpoint') + ' — Annotated';
+  document.getElementById('site-url').textContent = url;
+  document.getElementById('ann-count').textContent = annotations.length + ' comment' + (annotations.length !== 1 ? 's' : '');
+  document.getElementById('open-btn').href = url;
+  document.getElementById('topbar').style.display = 'flex';
+  document.getElementById('frame-wrap').style.display = 'block';
+  document.getElementById('legend').style.display = 'block';
+
+  // Build legend
+  var li = document.getElementById('legend-items');
+  li.innerHTML = annotations.map(function(a) {
+    return '<div class="legend-item" data-id="' + a.id + '">' +
+      '<div class="legend-num">' + a.id + '</div>' +
+      '<div class="legend-text">' + esc(a.comment) + '</div>' +
+    '</div>';
+  }).join('');
+
+  // Load iframe
+  var iframe = document.getElementById('site-frame');
+  iframe.src = url;
+
+  var placed = false;
+  function placePins() {
+    if (placed) return; placed = true;
+    document.querySelectorAll('.pin').forEach(function(p){p.remove();});
+    var iRect = iframe.getBoundingClientRect();
+
+    annotations.forEach(function(a) {
+      var pin = document.createElement('div');
+      pin.className = 'pin';
+      pin.dataset.id = a.id;
+
+      // Position: x = % of viewport width mapped into iframe, y = ratio of page height
+      var absX = iRect.left + (a.x / 100) * iRect.width;
+      var pageH = a.pageH || 800;
+      var absY = iRect.top + (a.y / pageH) * iRect.height;
+      var clampedY = Math.max(iRect.top + 20, Math.min(iRect.bottom - 20, absY));
+
+      pin.style.left = absX + 'px';
+      pin.style.top  = clampedY + 'px';
+
+      // Flip card left if too close to right edge
+      var flipClass = absX > window.innerWidth - 380 ? ' flip' : '';
+
+      pin.innerHTML =
+        '<div class="pin-dot">' + a.id + '</div>' +
+        '<div class="pin-card' + flipClass + '">' +
+          '<div class="pin-card-header">' +
+            '<span class="pin-card-num">Comment #' + a.id + '</span>' +
+            '<button class="pin-card-close" title="Close">&#x2715;</button>' +
+          '</div>' +
+          '<div class="pin-card-body">' + esc(a.comment) + '</div>' +
+          (a.path ? '<div class="pin-card-path">' + esc(a.path) + '</div>' : '') +
+        '</div>';
+
       document.body.appendChild(pin);
+
+      // Click dot = toggle open/closed
+      pin.querySelector('.pin-dot').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = pin.classList.contains('open');
+        // Close all others
+        document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
+        document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
+        if (!isOpen) {
+          pin.classList.add('open');
+          var leg = document.querySelector('.legend-item[data-id="' + a.id + '"]');
+          if (leg) leg.classList.add('active');
+        }
+      });
+
+      // Close button inside card
+      pin.querySelector('.pin-card-close').addEventListener('click', function(e) {
+        e.stopPropagation();
+        pin.classList.remove('open');
+        var leg = document.querySelector('.legend-item[data-id="' + a.id + '"]');
+        if (leg) leg.classList.remove('active');
+      });
     });
+
+    // Click anywhere outside a pin = close all
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.pin')) {
+        document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
+        document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
+      }
+    });
+
+    // Legend click = open that pin's card
+    li.querySelectorAll('.legend-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var pid = item.dataset.id;
+        var pin = document.querySelector('.pin[data-id="' + pid + '"]');
+        if (!pin) return;
+        var isOpen = pin.classList.contains('open');
+        document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
+        document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
+        if (!isOpen) {
+          pin.classList.add('open');
+          item.classList.add('active');
+          pin.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    });
+
     hideOverlay();
   }
-  iframe.onload=function(){setTimeout(placePins,800);};
-  setTimeout(placePins,5000);
-  li.querySelectorAll(".legend-item").forEach(function(item){
-    item.onclick=function(){
-      var pin=document.querySelector('.pin[data-id="'+item.dataset.id+'"]');
-      if(!pin)return;
-      document.querySelectorAll(".pin").forEach(function(p){p.classList.remove("open");});
-      pin.classList.add("open");
-    };
-  });
+
+  iframe.onload = function(){ setTimeout(placePins, 600); };
+  setTimeout(placePins, 5000); // fallback
 }
-function hideOverlay(){var o=document.getElementById("overlay");o.style.opacity="0";o.style.transition="opacity .4s";setTimeout(function(){o.style.display="none";},400);}
-function showError(msg){document.getElementById("spinner").style.display="none";document.getElementById("overlay-msg").style.display="none";var e=document.createElement("div");e.className="overlay-err";e.textContent="Error: "+msg;document.getElementById("overlay").appendChild(e);}
-</script></body></html>
+
+function hideOverlay() {
+  var o = document.getElementById('overlay');
+  o.style.opacity = '0'; o.style.transition = 'opacity .4s';
+  setTimeout(function(){ o.style.display = 'none'; }, 400);
+}
+function showError(msg) {
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('overlay-msg').style.display = 'none';
+  var e = document.createElement('div');
+  e.className = 'overlay-err';
+  e.textContent = '❌ ' + msg;
+  document.getElementById('overlay').appendChild(e);
+}
+</script>
+</body></html>
