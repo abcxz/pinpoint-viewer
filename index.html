@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Pinpoint Viewer</title><style>
  *{margin:0;padding:0;box-sizing:border-box}
- body{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;overflow:hidden}
+ html,body{height:100%;font-family:system-ui,-apple-system,sans-serif;background:#0a0a0a;}
  #topbar{position:fixed;top:0;left:0;right:0;height:48px;background:#111;border-bottom:1px solid #222;display:flex;align-items:center;padding:0 16px;gap:12px;z-index:99999;box-shadow:0 2px 12px rgba(0,0,0,.4)}
  .logo{color:#fff;font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap}
  .logo span{color:#3b82f6}
@@ -9,12 +9,31 @@
  .count{color:#fff;background:#3b82f6;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600;white-space:nowrap}
  .open-btn{color:#888;font-size:12px;text-decoration:none;white-space:nowrap;border:1px solid #333;padding:4px 10px;border-radius:6px}
  .open-btn:hover{color:#fff;border-color:#555}
- #frame-wrap{position:fixed;top:48px;left:0;right:0;bottom:0;}
- #frame-inner{position:relative;width:100%;height:100%;}
- iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none;}
- /* Pin overlay — pointer-events none so scroll goes through to iframe */
- #pin-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99998;}
- .pin{position:absolute;pointer-events:auto;}
+
+ /* Scrollable outer container */
+ #frame-wrap{
+    position:fixed;top:48px;left:0;right:0;bottom:0;
+    overflow-y:scroll;
+    overflow-x:hidden;
+ }
+ /* Inner container = full page height, holds iframe + pins */
+ #frame-inner{
+    position:relative;
+    width:100%;
+    /* height set dynamically via JS to pageH */
+ }
+ /* iframe is sticky so it always fills the viewport while outer scrolls */
+ iframe{
+    position:sticky;
+    top:0;
+    width:100%;
+    height:calc(100vh - 48px);
+    border:none;
+    display:block;
+    z-index:1;
+ }
+ /* Pins are absolute in #frame-inner — placed at true page coordinates */
+ .pin{position:absolute;z-index:99998;pointer-events:auto;}
  .pin-dot{
     width:28px;height:28px;background:#3b82f6;color:#fff;
     border-radius:50%;font-size:12px;font-weight:700;
@@ -22,7 +41,7 @@
     box-shadow:0 2px 14px rgba(59,130,246,.6);
     cursor:pointer;border:2px solid #fff;
     transform:translate(-50%,-50%);
-    transition:transform .15s, background .15s, opacity .2s;
+    transition:transform .15s,background .15s;
     user-select:none;
  }
  .pin-dot:hover{transform:translate(-50%,-50%) scale(1.1)}
@@ -47,14 +66,6 @@
  .pin-card-close:hover{background:rgba(255,255,255,.18);color:#fff}
  .pin-card-body{white-space:pre-wrap;word-break:break-word;user-select:text;cursor:text;}
  .pin-card-path{color:#555;font-size:10px;margin-top:8px;font-family:monospace;word-break:break-all;}
- /* Scroll hint bar */
- #scroll-hint{
-    position:fixed;bottom:60px;left:50%;transform:translateX(-50%);
-    background:rgba(0,0,0,.7);color:#888;font-size:11px;
-    padding:6px 14px;border-radius:20px;z-index:99999;
-    pointer-events:none;opacity:0;transition:opacity .3s;
-    border:1px solid #333;
- }
  /* Legend */
  #legend{position:fixed;bottom:16px;right:16px;z-index:99999;background:#111;border:1px solid #222;border-radius:14px;padding:12px 14px;max-width:300px;max-height:260px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);}
  .legend-title{font-size:11px;color:#555;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
@@ -81,10 +92,8 @@
  <div id="frame-wrap" style="display:none">
    <div id="frame-inner">
        <iframe id="site-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock"></iframe>iframe>
-       <div id="pin-overlay"></div>div>
    </div>div>
  </div>div>
- <div id="scroll-hint">Scroll to navigate &bull; Click pins to view comments</div>div>
  <div id="legend" style="display:none">
    <div class="legend-title">Comments</div>div>
    <div id="legend-items"></div>div>
@@ -136,74 +145,44 @@
      }).join('');
 
      var iframe = document.getElementById('site-frame');
-     var overlay = document.getElementById('pin-overlay');
+     var frameInner = document.getElementById('frame-inner');
+     var frameWrap = document.getElementById('frame-wrap');
+
+     var pageH = (annotations[0] && annotations[0].pageH) ? annotations[0].pageH : 8000;
+
+     // Set frame-inner height to full page height so outer container is scrollable
+     frameInner.style.height = pageH + 'px';
+
      iframe.src = url;
 
-     // We track scroll ourselves since iframe is cross-origin
-     var scrollY = 0;
-     var pageH = (annotations[0] && annotations[0].pageH) ? annotations[0].pageH : 8000;
-     var viewH = 0;
-
-     function updatePinPositions() {
-          viewH = document.getElementById('frame-wrap').offsetHeight;
-          var viewW = document.getElementById('frame-wrap').offsetWidth;
-          document.querySelectorAll('.pin').forEach(function(pin) {
-                 var xPct = parseFloat(pin.dataset.xpct);
-                 var yAbs = parseFloat(pin.dataset.yabs);
-                 var left = (xPct / 100) * viewW;
-                 var top = yAbs - scrollY;
-                 pin.style.left = left + 'px';
-                 pin.style.top = top + 'px';
-                 var visible = top > 10 && top < viewH - 10;
-                 pin.style.opacity = visible ? '1' : '0';
-                 pin.style.pointerEvents = visible ? 'auto' : 'none';
-          });
-     }
-
-     // Track scroll via wheel events on the overlay
-     // The iframe handles wheel when pointer-events go through to it
-     // But we need to know how much it scrolled — track it ourselves
-     document.getElementById('frame-inner').addEventListener('wheel', function(e) {
-          // Accumulate scroll delta
-          var delta = e.deltaY;
-          if (e.deltaMode === 1) delta *= 40;  // line mode
-          if (e.deltaMode === 2) delta *= 800; // page mode
-          scrollY = Math.max(0, Math.min(pageH - viewH, scrollY + delta));
-          updatePinPositions();
-     }, { passive: true });
-
-     // Also track keyboard scroll
-     window.addEventListener('keydown', function(e) {
-          var delta = 0;
-          if (e.key === 'ArrowDown') delta = 80;
-          if (e.key === 'ArrowUp') delta = -80;
-          if (e.key === 'PageDown') delta = viewH;
-          if (e.key === 'PageUp') delta = -viewH;
-          if (e.key === 'End') delta = pageH;
-          if (e.key === 'Home') delta = -pageH;
-          if (delta !== 0) {
-                 scrollY = Math.max(0, Math.min(pageH - viewH, scrollY + delta));
-                 updatePinPositions();
-          }
+     // When outer container scrolls, sync the iframe scroll position
+     frameWrap.addEventListener('scroll', function() {
+          var scrollTop = frameWrap.scrollTop;
+          // Try to sync iframe scroll (works if same-origin, silently fails if cross-origin)
+          try {
+                 iframe.contentWindow.scrollTo(0, scrollTop);
+          } catch(e) {}
      });
-
-     // Show scroll hint briefly
-     var hint = document.getElementById('scroll-hint');
-     hint.style.opacity = '1';
-     setTimeout(function(){ hint.style.opacity = '0'; }, 3000);
 
      var placed = false;
      function placePins() {
           if (placed) return;
           placed = true;
-          viewH = document.getElementById('frame-wrap').offsetHeight;
 
           annotations.forEach(function(a) {
                  var pin = document.createElement('div');
                  pin.className = 'pin';
                  pin.dataset.id = a.id;
-                 pin.dataset.xpct = a.x;
-                 pin.dataset.yabs = a.y;
+
+                 // x: % of page width -> px
+                 var viewW = frameWrap.offsetWidth;
+                 var left = (a.x / 100) * viewW;
+                 // y: absolute px on full page
+                 var top = a.y;
+
+                 pin.style.left = left + 'px';
+                 pin.style.top = top + 'px';
+
                  var flipClass = (a.x > 75) ? ' flip' : '';
                  pin.innerHTML =
                           '<div class="pin-dot">' + a.id + '</div>' +
@@ -215,7 +194,8 @@
                             '<div class="pin-card-body">' + esc(a.comment) + '</div>' +
                             (a.path ? '<div class="pin-card-path">' + esc(a.path) + '</div>' : '') +
                           '</div>';
-                 overlay.appendChild(pin);
+
+                 frameInner.appendChild(pin);
 
                  pin.querySelector('.pin-dot').addEventListener('click', function(e) {
                           e.stopPropagation();
@@ -236,7 +216,15 @@
                  });
           });
 
-          updatePinPositions();
+          // Reposition pins on resize
+          window.addEventListener('resize', function() {
+                 var viewW = frameWrap.offsetWidth;
+                 document.querySelectorAll('.pin').forEach(function(pin) {
+                          var ann = annotations.find(function(a){ return String(a.id) === pin.dataset.id; });
+                          if (ann) pin.style.left = (ann.x / 100) * viewW + 'px';
+                 });
+          });
+
           hideOverlay();
      }
 
@@ -250,43 +238,27 @@
           }
      });
 
-     // Legend click = animate scrollY to center on annotation
+     // Legend click = scroll outer container to annotation y (centered)
      li.querySelectorAll('.legend-item').forEach(function(item) {
           item.addEventListener('click', function() {
                  var pid = item.dataset.id;
                  var ann = annotations.find(function(a){ return String(a.id) === pid; });
                  if (!ann) return;
 
-                 // Smooth scroll animation
-                 var targetY = Math.max(0, Math.min(pageH - viewH, ann.y - viewH / 2));
-                 var startY = scrollY;
-                 var startTime = null;
-                 var duration = 500;
+                 var viewH = frameWrap.offsetHeight;
+                 var targetScroll = Math.max(0, ann.y - viewH / 2);
+                 frameWrap.scrollTo({ top: targetScroll, behavior: 'smooth' });
 
-                 function animateScroll(ts) {
-                          if (!startTime) startTime = ts;
-                          var progress = Math.min((ts - startTime) / duration, 1);
-                          var ease = progress < 0.5 ? 2*progress*progress : -1+(4-2*progress)*progress;
-                          scrollY = startY + (targetY - startY) * ease;
-                          updatePinPositions();
-                          if (progress < 1) requestAnimationFrame(animateScroll);
-                          else {
-                                     scrollY = targetY;
-                                     updatePinPositions();
-                                     // Open the pin after scroll
-                                     var pin = document.querySelector('.pin[data-id="' + pid + '"]');
-                                     if (!pin) return;
-                                     document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
-                                     document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
-                                     pin.classList.add('open');
-                                     item.classList.add('active');
-                          }
-                 }
-                 requestAnimationFrame(animateScroll);
+                 setTimeout(function() {
+                          var pin = document.querySelector('.pin[data-id="' + pid + '"]');
+                          if (!pin) return;
+                          document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
+                          document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
+                          pin.classList.add('open');
+                          item.classList.add('active');
+                 }, 550);
           });
      });
-
-     window.addEventListener('resize', updatePinPositions);
   }
 
   function hideOverlay() {
