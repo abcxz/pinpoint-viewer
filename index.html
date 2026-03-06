@@ -9,64 +9,26 @@
  .count{color:#fff;background:#3b82f6;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600;white-space:nowrap}
  .open-btn{color:#888;font-size:12px;text-decoration:none;white-space:nowrap;border:1px solid #333;padding:4px 10px;border-radius:6px}
  .open-btn:hover{color:#fff;border-color:#555}
-
- /* Scrollable outer container */
- #frame-wrap{
-    position:fixed;top:48px;left:0;right:0;bottom:0;
-    overflow-y:scroll;
-    overflow-x:hidden;
- }
- /* Inner container = full page height, holds iframe + pins */
- #frame-inner{
-    position:relative;
-    width:100%;
-    /* height set dynamically via JS to pageH */
- }
- /* iframe is sticky so it always fills the viewport while outer scrolls */
- iframe{
-    position:sticky;
-    top:0;
-    width:100%;
-    height:calc(100vh - 48px);
-    border:none;
-    display:block;
-    z-index:1;
- }
- /* Pins are absolute in #frame-inner — placed at true page coordinates */
- .pin{position:absolute;z-index:99998;pointer-events:auto;}
- .pin-dot{
-    width:28px;height:28px;background:#3b82f6;color:#fff;
-    border-radius:50%;font-size:12px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 14px rgba(59,130,246,.6);
-    cursor:pointer;border:2px solid #fff;
-    transform:translate(-50%,-50%);
-    transition:transform .15s,background .15s;
-    user-select:none;
- }
+ /* Outer scroll container */
+ #frame-wrap{position:fixed;top:48px;left:0;right:0;bottom:0;overflow-y:scroll;overflow-x:hidden;}
+ /* Inner div is pageH tall — pins and iframe live here */
+ #frame-inner{position:relative;width:100%;}
+ /* iframe is sticky: always fills the viewport */
+ #site-frame{position:sticky;top:0;width:100%;height:calc(100vh - 48px);border:none;display:block;z-index:1;}
+ /* Pins are absolute at true page y coordinates */
+ .pin{position:absolute;z-index:2;pointer-events:auto;}
+ .pin-dot{width:28px;height:28px;background:#3b82f6;color:#fff;border-radius:50%;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 14px rgba(59,130,246,.6);cursor:pointer;border:2px solid #fff;transform:translate(-50%,-50%);transition:transform .15s,background .15s;user-select:none;}
  .pin-dot:hover{transform:translate(-50%,-50%) scale(1.1)}
  .pin.open .pin-dot{background:#1d4ed8;transform:translate(-50%,-50%) scale(1.1)}
- .pin-card{
-    display:none;position:absolute;
-    background:#1e1e1e;color:#e5e5e5;
-    padding:14px 16px 12px;border-radius:14px;
-    font-size:13px;line-height:1.6;
-    max-width:320px;min-width:200px;
-    box-shadow:0 8px 40px rgba(0,0,0,.7);
-    border:1px solid rgba(255,255,255,.12);
-    left:36px;top:-10px;
-    user-select:text;-webkit-user-select:text;
-    pointer-events:auto;z-index:99999;
- }
+ .pin-card{display:none;position:absolute;background:#1e1e1e;color:#e5e5e5;padding:14px 16px 12px;border-radius:14px;font-size:13px;line-height:1.6;max-width:320px;min-width:200px;box-shadow:0 8px 40px rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.12);left:36px;top:-10px;user-select:text;pointer-events:auto;z-index:3;}
  .pin.open .pin-card{display:block}
  .pin-card.flip{left:auto;right:36px}
  .pin-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px;}
  .pin-card-num{color:#3b82f6;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
- .pin-card-close{background:rgba(255,255,255,.08);border:none;color:#888;width:20px;height:20px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;pointer-events:auto;transition:background .15s,color .15s;}
+ .pin-card-close{background:rgba(255,255,255,.08);border:none;color:#888;width:20px;height:20px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,color .15s;}
  .pin-card-close:hover{background:rgba(255,255,255,.18);color:#fff}
- .pin-card-body{white-space:pre-wrap;word-break:break-word;user-select:text;cursor:text;}
+ .pin-card-body{white-space:pre-wrap;word-break:break-word;cursor:text;}
  .pin-card-path{color:#555;font-size:10px;margin-top:8px;font-family:monospace;word-break:break-all;}
- /* Legend */
  #legend{position:fixed;bottom:16px;right:16px;z-index:99999;background:#111;border:1px solid #222;border-radius:14px;padding:12px 14px;max-width:300px;max-height:260px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);}
  .legend-title{font-size:11px;color:#555;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
  .legend-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;cursor:pointer;padding:6px 8px;border-radius:8px;transition:background .15s;}
@@ -76,8 +38,7 @@
  .legend-num{min-width:22px;height:22px;background:#3b82f6;color:#fff;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
  .legend-text{font-size:12px;color:#ccc;line-height:1.4;}
  #overlay{position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:199999;gap:16px;}
- .overlay-logo{font-size:32px}
- .overlay-msg{color:#888;font-size:15px}
+ .overlay-logo{font-size:32px}.overlay-msg{color:#888;font-size:15px}
  .overlay-err{color:#f87171;font-size:14px;max-width:400px;text-align:center;padding:0 20px}
  .spinner{width:32px;height:32px;border:3px solid #222;border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite}
  @keyframes spin{to{transform:rotate(360deg)}}
@@ -113,16 +74,9 @@
           var r = await fetch('https://api.github.com/gists/' + gistId);
           if (!r.ok) throw new Error('Could not load annotations (status ' + r.status + ')');
           var d = await r.json();
-          var fileInfo = d.files['pinpoint.json'];
-          var jsonText;
-          if (fileInfo.truncated) {
-                 var rawResp = await fetch(fileInfo.raw_url);
-                 if (!rawResp.ok) throw new Error('Could not load raw annotations (status ' + rawResp.status + ')');
-                 jsonText = await rawResp.text();
-          } else {
-                 jsonText = fileInfo.content;
-          }
-          var rec = JSON.parse(jsonText);
+          var f = d.files['pinpoint.json'];
+          var txt = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
+          var rec = JSON.parse(txt);
           init(rec.url, rec.title, rec.annotations);
      } catch(e) { showError(e.message); }
   }
@@ -138,141 +92,107 @@
 
      var li = document.getElementById('legend-items');
      li.innerHTML = annotations.map(function(a) {
-          return '<div class="legend-item" data-id="' + a.id + '">' +
-                 '<div class="legend-num">' + a.id + '</div>' +
-                 '<div class="legend-text">' + esc(a.comment) + '</div>' +
-                 '</div>';
+          return '<div class="legend-item" data-id="' + a.id + '"><div class="legend-num">' + a.id + '</div><div class="legend-text">' + esc(a.comment) + '</div></div>';
      }).join('');
 
      var iframe = document.getElementById('site-frame');
-     var frameInner = document.getElementById('frame-inner');
-     var frameWrap = document.getElementById('frame-wrap');
+     var inner  = document.getElementById('frame-inner');
+     var wrap   = document.getElementById('frame-wrap');
 
-     var pageH = (annotations[0] && annotations[0].pageH) ? annotations[0].pageH : 8000;
+     var pageH = (annotations[0] && annotations[0].pageH) || 8000;
 
-     // Set frame-inner height to full page height so outer container is scrollable
-     frameInner.style.height = pageH + 'px';
+     // inner is pageH tall so the outer scroll container scrolls the full page height
+     inner.style.height = pageH + 'px';
 
      iframe.src = url;
 
-     // When outer container scrolls, sync the iframe scroll position
-     frameWrap.addEventListener('scroll', function() {
-          var scrollTop = frameWrap.scrollTop;
-          // Try to sync iframe scroll (works if same-origin, silently fails if cross-origin)
-          try {
-                 iframe.contentWindow.scrollTo(0, scrollTop);
-          } catch(e) {}
+     // When outer div scrolls, try to sync iframe (works same-origin, silently fails cross-origin)
+     wrap.addEventListener('scroll', function() {
+          try { iframe.contentWindow.scrollTo(0, wrap.scrollTop); } catch(e) {}
      });
 
-     var placed = false;
      function placePins() {
-          if (placed) return;
-          placed = true;
-
+          var W = wrap.offsetWidth;
           annotations.forEach(function(a) {
                  var pin = document.createElement('div');
                  pin.className = 'pin';
                  pin.dataset.id = a.id;
-
-                 // x: % of page width -> px
-                 var viewW = frameWrap.offsetWidth;
-                 var left = (a.x / 100) * viewW;
-                 // y: absolute px on full page
-                 var top = a.y;
-
-                 pin.style.left = left + 'px';
-                 pin.style.top = top + 'px';
-
-                 var flipClass = (a.x > 75) ? ' flip' : '';
+                 // x is % of page width, y is absolute px on full page
+                 pin.style.left = (a.x / 100 * W) + 'px';
+                 pin.style.top  = a.y + 'px';
+                 var flip = a.x > 75 ? ' flip' : '';
                  pin.innerHTML =
                           '<div class="pin-dot">' + a.id + '</div>' +
-                          '<div class="pin-card' + flipClass + '">' +
-                            '<div class="pin-card-header">' +
-                              '<span class="pin-card-num">Comment #' + a.id + '</span>' +
-                              '<button class="pin-card-close" title="Close">&#x2715;</button>' +
-                            '</div>' +
-                            '<div class="pin-card-body">' + esc(a.comment) + '</div>' +
-                            (a.path ? '<div class="pin-card-path">' + esc(a.path) + '</div>' : '') +
+                          '<div class="pin-card' + flip + '"><div class="pin-card-header">' +
+                          '<span class="pin-card-num">Comment #' + a.id + '</span>' +
+                          '<button class="pin-card-close">&#x2715;</button></div>' +
+                          '<div class="pin-card-body">' + esc(a.comment) + '</div>' +
+                          (a.path ? '<div class="pin-card-path">' + esc(a.path) + '</div>' : '') +
                           '</div>';
-
-                 frameInner.appendChild(pin);
+                 inner.appendChild(pin);
 
                  pin.querySelector('.pin-dot').addEventListener('click', function(e) {
                           e.stopPropagation();
-                          var isOpen = pin.classList.contains('open');
-                          document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
-                          document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
-                          if (!isOpen) {
-                                     pin.classList.add('open');
-                                     var leg = document.querySelector('.legend-item[data-id="' + a.id + '"]');
-                                     if (leg) leg.classList.add('active');
-                          }
+                          var open = pin.classList.contains('open');
+                          closeAll();
+                          if (!open) { pin.classList.add('open'); highlight(a.id, true); }
                  });
                  pin.querySelector('.pin-card-close').addEventListener('click', function(e) {
-                          e.stopPropagation();
-                          pin.classList.remove('open');
-                          var leg = document.querySelector('.legend-item[data-id="' + a.id + '"]');
-                          if (leg) leg.classList.remove('active');
+                          e.stopPropagation(); pin.classList.remove('open'); highlight(a.id, false);
                  });
           });
 
-          // Reposition pins on resize
           window.addEventListener('resize', function() {
-                 var viewW = frameWrap.offsetWidth;
-                 document.querySelectorAll('.pin').forEach(function(pin) {
-                          var ann = annotations.find(function(a){ return String(a.id) === pin.dataset.id; });
-                          if (ann) pin.style.left = (ann.x / 100) * viewW + 'px';
+                 var W2 = wrap.offsetWidth;
+                 annotations.forEach(function(a) {
+                          var p = inner.querySelector('.pin[data-id="' + a.id + '"]');
+                          if (p) p.style.left = (a.x / 100 * W2) + 'px';
                  });
           });
 
           hideOverlay();
      }
 
-     iframe.onload = function(){ setTimeout(placePins, 800); };
-     setTimeout(placePins, 6000);
+     function closeAll() {
+          document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
+          document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
+     }
+     function highlight(id, on) {
+          var leg = document.querySelector('.legend-item[data-id="' + id + '"]');
+          if (leg) leg.classList.toggle('active', on);
+     }
 
-     document.addEventListener('click', function(e) {
-          if (!e.target.closest('.pin')) {
-                 document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
-                 document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
-          }
-     });
+     document.addEventListener('click', function(e) { if (!e.target.closest('.pin')) closeAll(); });
 
-     // Legend click = scroll outer container to annotation y (centered)
      li.querySelectorAll('.legend-item').forEach(function(item) {
           item.addEventListener('click', function() {
                  var pid = item.dataset.id;
                  var ann = annotations.find(function(a){ return String(a.id) === pid; });
                  if (!ann) return;
-
-                 var viewH = frameWrap.offsetHeight;
-                 var targetScroll = Math.max(0, ann.y - viewH / 2);
-                 frameWrap.scrollTo({ top: targetScroll, behavior: 'smooth' });
-
+                 // Scroll outer container so ann.y is centered in viewport
+                 wrap.scrollTo({ top: Math.max(0, ann.y - wrap.offsetHeight / 2), behavior: 'smooth' });
                  setTimeout(function() {
-                          var pin = document.querySelector('.pin[data-id="' + pid + '"]');
-                          if (!pin) return;
-                          document.querySelectorAll('.pin.open').forEach(function(p){ p.classList.remove('open'); });
-                          document.querySelectorAll('.legend-item.active').forEach(function(el){ el.classList.remove('active'); });
-                          pin.classList.add('open');
-                          item.classList.add('active');
-                 }, 550);
+                          closeAll();
+                          var pin = inner.querySelector('.pin[data-id="' + pid + '"]');
+                          if (pin) { pin.classList.add('open'); item.classList.add('active'); }
+                 }, 500);
           });
      });
+
+     iframe.onload = function(){ placePins(); };
+     setTimeout(placePins, 5000);
   }
 
   function hideOverlay() {
      var o = document.getElementById('overlay');
-     o.style.opacity = '0';
-     o.style.transition = 'opacity .4s';
-     setTimeout(function(){ o.style.display = 'none'; }, 400);
+     o.style.opacity='0'; o.style.transition='opacity .4s';
+     setTimeout(function(){ o.style.display='none'; }, 400);
   }
   function showError(msg) {
-     document.getElementById('spinner').style.display = 'none';
-     document.getElementById('overlay-msg').style.display = 'none';
+     document.getElementById('spinner').style.display='none';
+     document.getElementById('overlay-msg').style.display='none';
      var e = document.createElement('div');
-     e.className = 'overlay-err';
-     e.textContent = '\u274c ' + msg;
+     e.className='overlay-err'; e.textContent='\u274c '+msg;
      document.getElementById('overlay').appendChild(e);
   }
  </script>
